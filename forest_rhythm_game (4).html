@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Forest Spirit Rhythm</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a4d2e 0%, #2d5a3d 50%, #4a7c59 100%);
+            touch-action: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 20px;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(180deg, #0f2419 0%, #1a3d2e 100%);
+            border: 3px solid #4a7c59;
+            box-shadow: 0 0 30px rgba(74, 124, 89, 0.5);
+            max-width: 100%;
+            max-height: calc(100vh - 200px);
+            margin-bottom: 10px;
+        }
+
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #a8e6cf;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            z-index: 10;
+            width: 90%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        #settingsBtn {
+            background: linear-gradient(135deg, rgba(74, 124, 89, 0.8) 0%, rgba(93, 153, 112, 0.8) 100%);
+            border: 2px solid #4a7c59;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            color: #a8e6cf;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #settingsBtn:hover, #settingsBtn:active {
+            background: linear-gradient(135deg, rgba(126, 200, 163, 0.9) 0%, rgba(93, 153, 112, 0.9) 100%);
+            transform: scale(1.1);
+        }
+
+        #touchControls {
+            position: fixed;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            height: 100px;
+            display: none;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .touch-button {
+            position: absolute;
+            bottom: 10px;
+            width: 22%;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(74, 124, 89, 0.8) 0%, rgba(93, 153, 112, 0.8) 100%);
+            border: 3px solid #4a7c59;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a8e6cf;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            transition: all 0.1s;
+            user-select: none;
+            pointer-events: auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .touch-button:active {
+            background: linear-gradient(135deg, rgba(126, 200, 163, 0.8) 0%, rgba(93, 153, 112, 0.8) 100%);
+            transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(168, 230, 207, 0.6);
+        }
+
+        .touch-button:nth-child(1) { left: 2%; }
+        .touch-button:nth-child(2) { left: 26%; }
+        .touch-button:nth-child(3) { right: 26%; }
+        .touch-button:nth-child(4) { right: 2%; }
+
+        .menu-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 61, 46, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            border: 3px solid #4a7c59;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        #menu h1 {
+            color: #a8e6cf;
+            font-size: clamp(24px, 6vw, 48px);
+            margin-bottom: 15px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        #menu h2 {
+            color: #7ec8a3;
+            font-size: clamp(14px, 3vw, 20px);
+            margin-bottom: 20px;
+        }
+
+        .difficulty-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4a7c59 0%, #5d9970 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: clamp(14px, 3vw, 18px);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn.selected {
+            background: linear-gradient(135deg, #7ec8a3 0%, #5d9970 100%);
+            border: 2px solid #a8e6cf;
+        }
+
+        .btn-difficulty {
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .btn-difficulty.easy {
+            background: linear-gradient(135deg, #b8e986 0%, #8bc34a 100%);
+        }
+
+        .btn-difficulty.normal {
+            background: linear-gradient(135deg, #ffb74d 0%, #ff9800 100%);
+        }
+
+        .btn-difficulty.hard {
+            background: linear-gradient(135deg, #f48fb1 0%, #ec407a 100%);
+        }
+
+        .btn-difficulty.expert {
+            background: linear-gradient(135deg, #ba68c8 0%, #9c27b0 100%);
+        }
+
+        .difficulty-icon {
+            font-size: clamp(20px, 5vw, 32px);
+        }
+
+        #musicSelect h2 {
+            color: #a8e6cf;
+            font-size: clamp(20px, 4vw, 28px);
+            margin-bottom: 20px;
+        }
+
+        .music-list {
+            max-height: 50vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .music-item {
+            background: rgba(74, 124, 89, 0.3);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 2px solid #4a7c59;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .music-item:hover, .music-item:active {
+            background: rgba(126, 200, 163, 0.4);
+            border-color: #a8e6cf;
+            transform: translateX(5px);
+        }
+
+        .music-item.selected {
+            background: rgba(126, 200, 163, 0.5);
+            border: 2px solid #a8e6cf;
+        }
+
+        .music-title {
+            color: #a8e6cf;
+            font-size: clamp(14px, 3vw, 18px);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .music-stats {
+            color: #7ec8a3;
+            font-size: clamp(11px, 2.5vw, 14px);
+            display: flex;
+            justify-content: space-around;
+            margin-top: 8px;
+        }
+
+        .add-music-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #5d9970 0%, #4a7c59 100%);
+            margin-bottom: 10px;
+        }
+
+        #gameOver h2 {
+            color: #a8e6cf;
+            font-size: clamp(24px, 5vw, 36px);
+            margin-bottom: 15px;
+        }
+
+        #gameOver p {
+            color: #7ec8a3;
+            font-size: clamp(14px, 3vw, 20px);
+            margin: 8px 0;
+        }
+
+        .tree-revival {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(74, 124, 89, 0.3);
+            border-radius: 15px;
+            border: 2px solid #4a7c59;
+        }
+
+        .tree-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 120px;
+            margin-bottom: 15px;
+        }
+
+        .tree-svg {
+            width: 80px;
+            height: 100px;
+            transition: all 1s ease-out;
+        }
+
+        .notes-progress {
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a7c59 0%, #a8e6cf 100%);
+            transition: width 1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-label {
+            color: #7ec8a3;
+            font-size: clamp(14px, 3vw, 18px);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .setting-label span {
+            color: #a8e6cf;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #4a7c59;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #a8e6cf;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(168, 230, 207, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #a8e6cf;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(168, 230, 207, 0.5);
+        }
+
+        .judgment {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(32px, 8vw, 48px);
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 50;
+            animation: judgmentPop 0.5s ease-out;
+        }
+
+        @keyframes judgmentPop {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        .perfect { color: #ffeb3b; }
+        .great { color: #4caf50; }
+        .good { color: #2196f3; }
+        .miss { color: #f44336; }
+
+        @media (max-width: 768px) {
+            #touchControls {
+                display: block;
+            }
+            
+            #gameCanvas {
+                max-height: calc(100vh - 220px);
+            }
+            
+            body {
+                padding-bottom: 80px;
+            }
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="ui">
+            <div>分數: <span id="score">0</span></div>
+            <div>音符: <span id="notesCollected">0</span></div>
+            <div>連擊: <span id="combo">0</span></div>
+            <div id="settingsBtn" onclick="openSettings()">⚙️</div>
+        </div>
+
+        <div id="menu" class="menu-panel">
+            <h1>🌳 Forest Spirit Rhythm 🌳</h1>
+            <h2>森林精靈節奏遊戲</h2>
+            <div class="difficulty-buttons">
+                <button class="btn btn-difficulty easy" onclick="selectDifficulty('easy')">
+                    <div class="difficulty-icon">🌿</div>
+                    <div>簡單</div>
+                </button>
+                <button class="btn btn-difficulty normal" onclick="selectDifficulty('normal')">
+                    <div class="difficulty-icon">🍂</div>
+                    <div>普通</div>
+                </button>
+                <button class="btn btn-difficulty hard" onclick="selectDifficulty('hard')">
+                    <div class="difficulty-icon">🌸</div>
+                    <div>困難</div>
+                </button>
+                <button class="btn btn-difficulty expert" onclick="selectDifficulty('expert')">
+                    <div class="difficulty-icon">🔮</div>
+                    <div>專家</div>
+                </button>
+            </div>
+            <p style="color: #7ec8a3; margin-top: 10px; font-size: clamp(12px, 2.5vw, 16px);">
+                電腦：使用 D F J K 鍵 | 手機：點擊下方按鈕
+            </p>
+        </div>
+
+        <div id="musicSelect" class="menu-panel hidden">
+            <h2>🎵 選擇音樂 🎵</h2>
+            <p style="color: #7ec8a3; margin-bottom: 15px; font-size: clamp(12px, 2.5vw, 14px);">
+                難度: <span id="currentDifficulty"></span>
+            </p>
+            <div class="music-list" id="musicList"></div>
+            <button class="btn add-music-btn" onclick="openMusicUpload()">
+                📁 導入新音樂
+            </button>
+            <button class="btn" onclick="startGameWithMusic()">
+                ▶️ 開始遊戲
+            </button>
+            <button class="btn" onclick="backToMenu()">
+                ← 返回
+            </button>
+        </div>
+
+        <div id="gameOver" class="menu-panel hidden">
+            <h2>🎵 遊戲結束 🎵</h2>
+            <p>最終分數: <span id="finalScore">0</span></p>
+            <p>最高連擊: <span id="maxCombo">0</span></p>
+            <p>準確率: <span id="accuracy">0</span>%</p>
+            
+            <div class="tree-revival">
+                <h3 style="color: #a8e6cf; margin-bottom: 15px;">🌳 森林復甦 🌳</h3>
+                <div class="tree-container" id="treeContainer"></div>
+                <div class="notes-progress">
+                    <p style="color: #7ec8a3; font-size: clamp(14px, 3vw, 16px);">
+                        音符收集: <span id="notesCollectedResult">0</span> / <span id="notesTarget">0</span>
+                    </p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill">0%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <p id="rank" style="font-size: clamp(32px, 8vw, 48px); margin: 15px 0;">-</p>
+            <button class="btn" onclick="restartGame()">重新開始</button>
+            <button class="btn" onclick="backToMusicSelect()">選擇音樂</button>
+        </div>
+
+        <div id="settings" class="menu-panel hidden">
+            <h2>⚙️ 遊戲設定</h2>
+            
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>音樂音量</span>
+                    <span id="musicVolumeValue">50%</span>
+                </div>
+                <input type="range" id="musicVolume" min="0" max="100" value="50" 
+                       oninput="updateMusicVolume(this.value)">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>按鍵音效音量</span>
+                    <span id="sfxVolumeValue">70%</span>
+                </div>
+                <input type="range" id="sfxVolume" min="0" max="100" value="70" 
+                       oninput="updateSfxVolume(this.value)">
+            </div>
+
+            <div class="setting-group">
+                <button class="btn" onclick="testSound()" style="width: 100%; margin-bottom: 10px;">
+                    🔊 測試音效
+                </button>
+                <button class="btn" onclick="closeSettings()" style="width: 100%;">
+                    ✓ 確定
+                </button>
+            </div>
+        </div>
+
+        <input type="file" id="musicFileInput" accept="audio/mp3,audio/mpeg,audio/wav,audio/ogg" 
+               style="display: none;" onchange="handleMusicUpload(this.files[0])">
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="touchControls">
+            <div class="touch-button" data-lane="0">D</div>
+            <div class="touch-button" data-lane="1">F</div>
+            <div class="touch-button" data-lane="2">J</div>
+            <div class="touch-button" data-lane="3">K</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 遊戲數據存儲
+        let gameData = {
+            musicLibrary: [
+                {
+                    id: 'default',
+                    name: '森林之歌 (預設)',
+                    isDefault: true,
+                    buffer: null,
+                    stats: {
+                        easy: { plays: 0, notesCollected: 0, maxTarget: 500 },
+                        normal: { plays: 0, notesCollected: 0, maxTarget: 700 },
+                        hard: { plays: 0, notesCollected: 0, maxTarget: 900 },
+                        expert: { plays: 0, notesCollected: 0, maxTarget: 1200 }
+                    }
+                }
+            ]
+        };
+
+        // 難度配色
+        const difficultyColors = {
+            easy: { 
+                tree: ['#b8e986', '#8bc34a'], 
+                bg: 'rgba(184, 233, 134, 0.2)',
+                target: 500,
+                icon: '🌿'
+            },
+            normal: { 
+                tree: ['#ffb74d', '#ff9800'], 
+                bg: 'rgba(255, 183, 77, 0.2)',
+                target: 700,
+                icon: '🍂'
+            },
+            hard: { 
+                tree: ['#f48fb1', '#ec407a'], 
+                bg: 'rgba(244, 143, 177, 0.2)',
+                target: 900,
+                icon: '🌸'
+            },
+            expert: { 
+                tree: ['#ba68c8', '#9c27b0'], 
+                bg: 'rgba(186, 104, 200, 0.2)',
+                target: 1200,
+                icon: '🔮'
+            }
+        };
+
+        // 音訊系統
+        let audioContext = null;
+        let backgroundMusic = null;
+        let musicSource = null;
+        let musicGainNode = null;
+        let sfxGainNode = null;
+        let musicVolume = 0.5;
+        let sfxVolume = 0.7;
+
+        // 遊戲狀態
+        let gameState = 'menu';
+        let difficulty = 'easy';
+        let selectedMusicId = 'default';
+        let score = 0;
+        let combo = 0;
+        let maxCombo = 0;
+        let notesCollected = 0;
+        let notes = [];
+        let particles = [];
+        let judgments = { perfect: 0, great: 0, good: 0, miss: 0 };
+        let noteSpeed = 2;
+        let spawnRate = 1000;
+        let lastSpawnTime = 0;
+        let gameTime = 0;
+        let gameDuration = 90000;
+
+        // 軌道設定
+        let lanes = 4;
+        let laneWidth = 150;
+        let laneStartX = 0;
+        let judgmentLineY = 500;
+        let perfectRange = 30;
+        let greatRange = 60;
+        let goodRange = 90;
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         window.innerWidth <= 768;
+
+        const keyMap = { 'd': 0, 'f': 1, 'j': 2, 'k': 3 };
+        const keyPressed = [false, false, false, false];
+
+        const difficultySettings = {
+            easy: { speed: 2, spawnRate: 1200 },
+            normal: { speed: 3, spawnRate: 900 },
+            hard: { speed: 4, spawnRate: 700 },
+            expert: { speed: 5, spawnRate: 500 }
+        };
+
+        // 響應式Canvas設置
+        function resizeCanvas() {
+            const maxWidth = Math.min(800, window.innerWidth - 20);
+            const maxHeight = window.innerHeight - (isMobile ? 220 : 80);
+            
+            canvas.width = maxWidth;
+            canvas.height = Math.min(600, maxHeight);
+            
+            updateGameDimensions();
+        }
+
+        function updateGameDimensions() {
+            laneWidth = Math.floor(canvas.width / 5);
+            laneStartX = (canvas.width - (laneWidth * lanes)) / 2;
+            judgmentLineY = canvas.height - 100;
+        }
+
+        // 音訊初始化
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                musicGainNode = audioContext.createGain();
+                musicGainNode.gain.value = musicVolume;
+                musicGainNode.connect(audioContext.destination);
+                
+                sfxGainNode = audioContext.createGain();
+                sfxGainNode.gain.value = sfxVolume;
+                sfxGainNode.connect(audioContext.destination);
+            }
+        }
+
+        function createBackgroundMusic() {
+            if (!audioContext) initAudio();
+            
+            const duration = 90;
+            const sampleRate = audioContext.sampleRate;
+            const buffer = audioContext.createBuffer(2, sampleRate * duration, sampleRate);
+            
+            for (let channel = 0; channel < 2; channel++) {
+                const data = buffer.getChannelData(channel);
+                const melody = [523, 587, 659, 698, 784, 880, 988, 1047];
+                
+                for (let i = 0; i < buffer.length; i++) {
+                    const t = i / sampleRate;
+                    const note = melody[Math.floor(t * 2) % melody.length];
+                    const harmony = melody[(Math.floor(t * 2) + 2) % melody.length];
+                    
+                    let value = Math.sin(2 * Math.PI * note * t) * 0.3;
+                    value += Math.sin(2 * Math.PI * harmony * t) * 0.15;
+                    value += Math.sin(2 * Math.PI * 130 * t) * 0.2 * (Math.sin(t * 4) > 0 ? 1 : 0);
+                    
+                    const beatTime = t % 0.5;
+                    const envelope = Math.exp(-beatTime * 5);
+                    
+                    data[i] = value * envelope * 0.3;
+                }
+            }
+            
+            return buffer;
+        }
+
+        function playBackgroundMusic() {
+            if (!audioContext) initAudio();
+            
+            if (musicSource) {
+                try { musicSource.stop(); } catch (e) {}
+            }
+            
+            const music = gameData.musicLibrary.find(m => m.id === selectedMusicId);
+            
+            musicSource = audioContext.createBufferSource();
+            
+            if (music && music.buffer) {
+                musicSource.buffer = music.buffer;
+            } else {
+                if (!backgroundMusic) {
+                    backgroundMusic = createBackgroundMusic();
+                    gameData.musicLibrary[0].buffer = backgroundMusic;
+                }
+                musicSource.buffer = backgroundMusic;
+            }
+            
+            musicSource.loop = true;
+            musicSource.connect(musicGainNode);
+            musicSource.start(0);
+        }
+
+        function stopBackgroundMusic() {
+            if (musicSource) {
+                try { musicSource.stop(); } catch (e) {}
+                musicSource = null;
+            }
+        }
+
+        function createSoundEffect(frequency, duration, type = 'sine') {
+            if (!audioContext) initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = type;
+            oscillator.frequency.value = frequency;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(sfxGainNode);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playJudgmentSound(judgment) {
+            const sounds = {
+                'perfect': { freq: 880, duration: 0.1, type: 'sine' },
+                'great': { freq: 659, duration: 0.1, type: 'sine' },
+                'good': { freq: 523, duration: 0.1, type: 'triangle' },
+                'miss': { freq: 220, duration: 0.15, type: 'sawtooth' }
+            };
+            
+            const sound = sounds[judgment];
+            if (sound) createSoundEffect(sound.freq, sound.duration, sound.type);
+        }
+
+        function updateMusicVolume(value) {
+            musicVolume = value / 100;
+            document.getElementById('musicVolumeValue').textContent = value + '%';
+            if (musicGainNode) musicGainNode.gain.value = musicVolume;
+        }
+
+        function updateSfxVolume(value) {
+            sfxVolume = value / 100;
+            document.getElementById('sfxVolumeValue').textContent = value + '%';
+            if (sfxGainNode) sfxGainNode.gain.value = sfxVolume;
+        }
+
+        function testSound() {
+            playJudgmentSound('perfect');
+            setTimeout(() => playJudgmentSound('great'), 200);
+            setTimeout(() => playJudgmentSound('good'), 400);
+            setTimeout(() => playJudgmentSound('miss'), 600);
+        }
+
+        // 難度選擇
+        function selectDifficulty(diff) {
+            difficulty = diff;
+            showMusicSelect();
+        }
+
+        function showMusicSelect() {
+            document.getElementById('menu').classList.add('hidden');
+            document.getElementById('musicSelect').classList.remove('hidden');
+            
+            const diffConfig = difficultyColors[difficulty];
+            const diffNames = { easy: '簡單', normal: '普通', hard: '困難', expert: '專家' };
+            document.getElementById('currentDifficulty').textContent = 
+                `${diffConfig.icon} ${diffNames[difficulty]} (目標: ${diffConfig.target}音符)`;
+            
+            renderMusicList();
+        }
+
+        function renderMusicList() {
+            const listContainer = document.getElementById('musicList');
+            listContainer.innerHTML = '';
+            
+            gameData.musicLibrary.forEach(music => {
+                const stats = music.stats[difficulty];
+                const item = document.createElement('div');
+                item.className = 'music-item' + (music.id === selectedMusicId ? ' selected' : '');
+                item.onclick = () => selectMusic(music.id);
+                
+                const progress = Math.min(100, (stats.notesCollected / stats.maxTarget) * 100).toFixed(1);
+                
+                item.innerHTML = `
+                    <div class="music-title">${music.name}</div>
+                    <div class="music-stats">
+                        <span>🎮 ${stats.plays}次</span>
+                        <span>🎵 ${stats.notesCollected}/${stats.maxTarget}</span>
+                        <span>📊 ${progress}%</span>
+                    </div>
+                `;
+                
+                listContainer.appendChild(item);
+            });
+        }
+
+        function selectMusic(musicId) {
+            selectedMusicId = musicId;
+            renderMusicList();
+        }
+
+        function openMusicUpload() {
+            document.getElementById('musicFileInput').click();
+        }
+
+        async function handleMusicUpload(file) {
+            if (!file) return;
+            
+            try {
+                if (!audioContext) initAudio();
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const buffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                const musicId = 'custom_' + Date.now();
+                const newMusic = {
+                    id: musicId,
+                    name: file.name.replace(/\.[^/.]+$/, ''),
+                    isDefault: false,
+                    buffer: buffer,
+                    duration: buffer.duration,
+                    stats: {
+                        easy: { plays: 0, notesCollected: 0, maxTarget: 500 },
+                        normal: { plays: 0, notesCollected: 0, maxTarget: 700 },
+                        hard: { plays: 0, notesCollected: 0, maxTarget: 900 },
+                        expert: { plays: 0, notesCollected: 0, maxTarget: 1200 }
+                    }
+                };
+                
+                gameData.musicLibrary.push(newMusic);
+                selectedMusicId = musicId;
+                
+                renderMusicList();
+                alert(`✓ 音樂「${newMusic.name}」載入成功！`);
+            } catch (error) {
+                console.error('載入音樂失敗:', error);
+                alert('✗ 音樂載入失敗，請確認檔案格式正確');
+            }
+        }
+
+        function backToMenu() {
+            document.getElementById('musicSelect').classList.add('hidden');
+            document.getElementById('menu').classList.remove('hidden');
+        }
+
+        function backToMusicSelect() {
+            document.getElementById('gameOver').classList.add('hidden');
+            showMusicSelect();
+        }
+
+        function startGameWithMusic() {
+            document.getElementById('musicSelect').classList.add('hidden');
+            startGame();
+        }
+
+        // 音符類別
+        class Note {
+            constructor(lane) {
+                this.lane = lane;
+                this.x = laneStartX + lane * laneWidth + laneWidth / 2;
+                this.y = 0;
+                this.speed = noteSpeed;
+                this.hit = false;
+                this.missed = false;
+                this.size = Math.min(40, laneWidth * 0.25);
+                this.hue = (lane * 90) % 360;
+            }
+
+            update() {
+                this.y += this.speed;
+                this.x = laneStartX + this.lane * laneWidth + laneWidth / 2;
+                
+                if (this.y > judgmentLineY + goodRange && !this.hit && !this.missed) {
+                    this.missed = true;
+                    combo = 0;
+                    judgments.miss++;
+                    showJudgment('MISS', 'miss');
+                    playJudgmentSound('miss');
+                }
+            }
+
+            draw() {
+                if (this.hit || this.missed) return;
+
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+                gradient.addColorStop(0, `hsla(${this.hue}, 80%, 70%, 0.8)`);
+                gradient.addColorStop(1, `hsla(${this.hue}, 80%, 50%, 0.2)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = `hsl(${this.hue}, 80%, 60%)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = `hsl(${this.hue}, 80%, 80%)`;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath();
+                ctx.arc(this.x - this.size * 0.25, this.y - this.size * 0.25, this.size * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            checkHit() {
+                const distance = Math.abs(this.y - judgmentLineY);
+                if (distance <= perfectRange) return 'perfect';
+                else if (distance <= greatRange) return 'great';
+                else if (distance <= goodRange) return 'good';
+                return null;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8 - 2;
+                this.life = 1;
+                this.color = color;
+                this.size = Math.random() * 6 + 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2;
+                this.life -= 0.02;
+            }
+
+            draw() {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function startGame() {
+            gameState = 'playing';
+            
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            notesCollected = 0;
+            notes = [];
+            particles = [];
+            judgments = { perfect: 0, great: 0, good: 0, miss: 0 };
+            gameTime = 0;
+            
+            const settings = difficultySettings[difficulty];
+            noteSpeed = settings.speed;
+            spawnRate = settings.spawnRate;
+            
+            // 更新遊玩次數
+            const music = gameData.musicLibrary.find(m => m.id === selectedMusicId);
+            if (music) {
+                music.stats[difficulty].plays++;
+            }
+            
+            updateUI();
+            initAudio();
+            playBackgroundMusic();
+            gameLoop();
+        }
+
+        function spawnNote() {
+            const lane = Math.floor(Math.random() * lanes);
+            notes.push(new Note(lane));
+        }
+
+        function handleKeyPress(lane) {
+            if (keyPressed[lane]) return;
+            keyPressed[lane] = true;
+
+            let hitNote = null;
+            let bestDistance = Infinity;
+
+            for (let note of notes) {
+                if (note.lane === lane && !note.hit && !note.missed) {
+                    const distance = Math.abs(note.y - judgmentLineY);
+                    if (distance < bestDistance && distance <= goodRange) {
+                        bestDistance = distance;
+                        hitNote = note;
+                    }
+                }
+            }
+
+            if (hitNote) {
+                const judgment = hitNote.checkHit();
+                if (judgment) {
+                    hitNote.hit = true;
+                    combo++;
+                    maxCombo = Math.max(maxCombo, combo);
+
+                    let points = 0;
+                    let particleColor = '';
+                    let notesEarned = 0;
+
+                    switch (judgment) {
+                        case 'perfect':
+                            points = 100 + (combo * 10);
+                            particleColor = '#ffeb3b';
+                            notesEarned = 3;
+                            judgments.perfect++;
+                            showJudgment('PERFECT!', 'perfect');
+                            playJudgmentSound('perfect');
+                            break;
+                        case 'great':
+                            points = 75 + (combo * 7);
+                            particleColor = '#4caf50';
+                            notesEarned = 2;
+                            judgments.great++;
+                            showJudgment('GREAT!', 'great');
+                            playJudgmentSound('great');
+                            break;
+                        case 'good':
+                            points = 50 + (combo * 5);
+                            particleColor = '#2196f3';
+                            notesEarned = 1;
+                            judgments.good++;
+                            showJudgment('GOOD', 'good');
+                            playJudgmentSound('good');
+                            break;
+                    }
+
+                    score += points;
+                    notesCollected += notesEarned;
+                    createParticles(hitNote.x, hitNote.y, particleColor);
+                }
+            } else {
+                combo = 0;
+            }
+
+            updateUI();
+        }
+
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function showJudgment(text, className) {
+            const judgment = document.createElement('div');
+            judgment.className = `judgment ${className}`;
+            judgment.textContent = text;
+            document.body.appendChild(judgment);
+            setTimeout(() => judgment.remove(), 500);
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('combo').textContent = combo;
+            document.getElementById('notesCollected').textContent = notesCollected;
+        }
+
+        function drawBackground() {
+            const colors = difficultyColors[difficulty];
+            
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(15, 36, 25, 0.5)');
+            gradient.addColorStop(1, 'rgba(15, 36, 25, 0.1)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < 5; i++) {
+                const treeX = i * (canvas.width / 5);
+                const treeHeight = (canvas.height * 0.3) + Math.sin(gameTime * 0.001 + i) * 20;
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(treeX, canvas.height);
+                ctx.lineTo(treeX - 30, canvas.height - treeHeight);
+                ctx.lineTo(treeX + 30, canvas.height - treeHeight);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function drawLanes() {
+            for (let i = 0; i < lanes; i++) {
+                const x = laneStartX + i * laneWidth;
+                
+                ctx.fillStyle = 'rgba(74, 124, 89, 0.1)';
+                ctx.fillRect(x, 0, laneWidth, canvas.height);
+
+                ctx.strokeStyle = 'rgba(168, 230, 207, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, 0, laneWidth, canvas.height);
+
+                ctx.fillStyle = 'rgba(168, 230, 207, 0.5)';
+                ctx.font = `${Math.min(20, laneWidth * 0.15)}px Arial`;
+                ctx.textAlign = 'center';
+                const keys = ['D', 'F', 'J', 'K'];
+                ctx.fillText(keys[i], x + laneWidth / 2, canvas.height - 20);
+            }
+
+            ctx.strokeStyle = keyPressed.some(k => k) ? '#ffeb3b' : '#a8e6cf';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(laneStartX, judgmentLineY);
+            ctx.lineTo(laneStartX + laneWidth * lanes, judgmentLineY);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(168, 230, 207, 0.2)';
+            ctx.lineWidth = 2;
+            for (let range of [perfectRange, greatRange, goodRange]) {
+                ctx.beginPath();
+                ctx.moveTo(laneStartX, judgmentLineY - range);
+                ctx.lineTo(laneStartX + laneWidth * lanes, judgmentLineY - range);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(laneStartX, judgmentLineY + range);
+                ctx.lineTo(laneStartX + laneWidth * lanes, judgmentLineY + range);
+                ctx.stroke();
+            }
+        }
+
+        function gameLoop() {
+            if (gameState !== 'playing') return;
+
+            gameTime += 16;
+
+            if (gameTime >= gameDuration) {
+                endGame();
+                return;
+            }
+
+            if (gameTime - lastSpawnTime > spawnRate) {
+                spawnNote();
+                lastSpawnTime = gameTime;
+            }
+
+            drawBackground();
+            drawLanes();
+
+            notes = notes.filter(note => {
+                note.update();
+                note.draw();
+                return note.y < canvas.height + 100;
+            });
+
+            particles = particles.filter(particle => {
+                particle.update();
+                particle.draw();
+                return particle.life > 0;
+            });
+
+            const progress = gameTime / gameDuration;
+            ctx.fillStyle = 'rgba(168, 230, 207, 0.3)';
+            ctx.fillRect(10, 10, (canvas.width - 20) * progress, 8);
+            ctx.strokeStyle = '#a8e6cf';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(10, 10, canvas.width - 20, 8);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameState = 'gameover';
+            stopBackgroundMusic();
+            
+            // 更新音樂統計
+            const music = gameData.musicLibrary.find(m => m.id === selectedMusicId);
+            if (music) {
+                const stats = music.stats[difficulty];
+                stats.notesCollected = Math.max(stats.notesCollected, notesCollected);
+            }
+            
+            const totalNotes = judgments.perfect + judgments.great + judgments.good + judgments.miss;
+            const accuracy = totalNotes > 0 ? 
+                ((judgments.perfect + judgments.great + judgments.good) / totalNotes * 100).toFixed(1) : 0;
+            
+            let rank = 'D';
+            if (accuracy >= 95) rank = 'S';
+            else if (accuracy >= 90) rank = 'A';
+            else if (accuracy >= 80) rank = 'B';
+            else if (accuracy >= 70) rank = 'C';
+
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('maxCombo').textContent = maxCombo;
+            document.getElementById('accuracy').textContent = accuracy;
+            document.getElementById('rank').textContent = rank;
+            
+            // 顯示森林復甦
+            showTreeRevival();
+            
+            document.getElementById('gameOver').classList.remove('hidden');
+        }
+
+        function showTreeRevival() {
+            const colors = difficultyColors[difficulty];
+            const target = colors.target;
+            const progress = Math.min(100, (notesCollected / target) * 100);
+            
+            document.getElementById('notesCollectedResult').textContent = notesCollected;
+            document.getElementById('notesTarget').textContent = target;
+            
+            // 創建樹木SVG
+            const treeContainer = document.getElementById('treeContainer');
+            treeContainer.innerHTML = '';
+            
+            for (let i = 0; i < 3; i++) {
+                const treeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                treeSvg.setAttribute('class', 'tree-svg');
+                treeSvg.setAttribute('viewBox', '0 0 100 120');
+                
+                const treeProgress = Math.min(100, Math.max(0, (progress - i * 33.3) * 3));
+                
+                const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+                gradient.setAttribute('id', `treeGrad${i}`);
+                gradient.setAttribute('x1', '0%');
+                gradient.setAttribute('y1', '100%');
+                gradient.setAttribute('x2', '0%');
+                gradient.setAttribute('y2', '0%');
+                
+                const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+                stop1.setAttribute('offset', `${treeProgress}%`);
+                stop1.setAttribute('style', `stop-color:${colors.tree[0]};stop-opacity:1`);
+                
+                const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+                stop2.setAttribute('offset', `${treeProgress}%`);
+                stop2.setAttribute('style', 'stop-color:#000000;stop-opacity:1');
+                
+                gradient.appendChild(stop1);
+                gradient.appendChild(stop2);
+                treeSvg.appendChild(gradient);
+                
+                // 樹幹
+                const trunk = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                trunk.setAttribute('x', '45');
+                trunk.setAttribute('y', '80');
+                trunk.setAttribute('width', '10');
+                trunk.setAttribute('height', '40');
+                trunk.setAttribute('fill', treeProgress > 0 ? '#8B4513' : '#000000');
+                treeSvg.appendChild(trunk);
+                
+                // 樹冠
+                const crown = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                crown.setAttribute('points', '50,20 20,80 80,80');
+                crown.setAttribute('fill', `url(#treeGrad${i})`);
+                treeSvg.appendChild(crown);
+                
+                treeContainer.appendChild(treeSvg);
+            }
+            
+            // 進度條動畫
+            setTimeout(() => {
+                const progressFill = document.getElementById('progressFill');
+                progressFill.style.width = progress + '%';
+                progressFill.textContent = progress.toFixed(1) + '%';
+            }, 500);
+        }
+
+        function restartGame() {
+            document.getElementById('gameOver').classList.add('hidden');
+            startGame();
+        }
+
+        function openSettings() {
+            const wasPlaying = gameState === 'playing';
+            if (wasPlaying) {
+                gameState = 'paused';
+                stopBackgroundMusic();
+            }
+            document.getElementById('settings').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings').classList.add('hidden');
+            if (gameState === 'paused') {
+                gameState = 'playing';
+                playBackgroundMusic();
+                gameLoop();
+            }
+        }
+
+        // 鍵盤事件
+        document.addEventListener('keydown', (e) => {
+            if (gameState !== 'playing') return;
+            const lane = keyMap[e.key.toLowerCase()];
+            if (lane !== undefined) {
+                e.preventDefault();
+                handleKeyPress(lane);
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const lane = keyMap[e.key.toLowerCase()];
+            if (lane !== undefined) {
+                keyPressed[lane] = false;
+            }
+        });
+
+        // 觸控事件
+        document.querySelectorAll('.touch-button').forEach(button => {
+            const lane = parseInt(button.dataset.lane);
+            
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing') {
+                    handleKeyPress(lane);
+                }
+            });
+            
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keyPressed[lane] = false;
+            });
+            
+            button.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing') {
+                    handleKeyPress(lane);
+                }
+            });
+            
+            button.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                keyPressed[lane] = false;
+            });
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (gameState === 'playing') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 初始化
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            updateUI();
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>
